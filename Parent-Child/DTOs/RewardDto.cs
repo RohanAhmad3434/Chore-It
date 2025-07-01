@@ -6,5 +6,10 @@
         public string Title { get; set; }
         public string? Description { get; set; }
         public int? AssignedToId { get; set; }
+
+        public bool IsRedeemed { get; set; }
+        public DateTime? RedeemedOn { get; set; }
+
+        //public int EarnedCount { get; set; } // ✅ New field
     }
 }

@@ -1,0 +1,20 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using Parent_Child.Services;
+
+[ApiController]
+[Route("api/stats")]
+public class StatsController : ControllerBase
+{
+    private readonly IStatsService _service;
+    public StatsController(IStatsService service)
+    {
+        _service = service;
+    }
+
+    [HttpGet("{childId}")]
+    public async Task<IActionResult> GetChildStats(int childId)
+    {
+        var stats = await _service.GetChildStatsAsync(childId);
+        return Ok(stats);
+    }
+}

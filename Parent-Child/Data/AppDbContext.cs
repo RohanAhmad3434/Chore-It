@@ -26,9 +26,5 @@ public class AppDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Reward> Rewards { get; set; }
     public DbSet<TaskItem> Tasks { get; set; }
-
-    public DbSet<Achievement> Achievements { get; set; }
-
-
-    //public DbSet<RewardHistory> RewardHistories { get; set; }
+ 
 }

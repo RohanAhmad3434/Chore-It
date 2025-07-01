@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Parent_Child.DTOs;
+using Parent_Child.Models;
 
 [ApiController]
 [Route("api/tasks")]

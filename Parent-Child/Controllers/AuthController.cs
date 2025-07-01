@@ -16,13 +16,6 @@ namespace Parent_Child.Controllers
             _authService = authService;
         }
 
-        //[HttpPost("register")]
-        //public async Task<IActionResult> Register(User user)
-        //{
-        //    var created = await _authService.RegisterAsync(user);
-        //    return Ok(created);
-        //}
-
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {

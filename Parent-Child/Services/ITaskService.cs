@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Parent_Child.DTOs;
+using Parent_Child.Models;
 
 public interface ITaskService
 {
@@ -11,8 +12,9 @@ public interface ITaskService
 
     // ✅ Updated to match DTO
     Task<List<TaskItemDto>> GetTasksByChildIdAsync(int childId);
-    Task<bool> MarkTaskCompleted(int childId, int taskId);
+    // ✅ Updated method signature to accept IFormFile photoFile
+    Task<bool> MarkTaskCompleted(int childId, int taskId, IFormFile photoFile);
     Task<bool> CheckChildExistsAsync(int childId);
-
+    Task<List<TaskItem>> GetActiveTasksForChildAsync(int childId);
 
 }

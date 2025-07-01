@@ -1,14 +1,21 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Parent_Child.DTOs;
-
+using Parent_Child.Services;
+using Parent_Child.Models;
 public class TaskService : ITaskService
 {
     private readonly AppDbContext _context;
-    public TaskService(AppDbContext context) => _context = context;
+    //public TaskService(AppDbContext context) => _context = context;
 
+    
     public async Task<List<TaskItem>> GetAllAsync() =>
         await _context.Tasks.Include(t => t.Reward).ToListAsync();
 
+    public TaskService(AppDbContext context)
+    {
+        _context = context;
+        
+    }
     public async Task<TaskItem> CreateAsync(TaskItem task)
     {
         _context.Tasks.Add(task);
@@ -18,12 +25,27 @@ public class TaskService : ITaskService
 
     public async Task<bool> ApproveTask(int id)
     {
-        var task = await _context.Tasks.FindAsync(id);
+        var task = await _context.Tasks
+            .Include(t => t.Reward)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
         if (task == null) return false;
+
         task.IsApproved = true;
+        task.IsCompleted = true;
+
+        // ✅ If the task has a reward, mark it as redeemed and assign to child
+        if (task.RewardId != null)
+        {
+            task.Reward.IsRedeemed = true;
+            task.Reward.RedeemedOn = DateTime.UtcNow;
+            task.Reward.AssignedToId = task.AssignedToId;
+        }
+
         await _context.SaveChangesAsync();
         return true;
     }
+
 
     public async Task<bool> RejectTask(int id)
     {
@@ -63,22 +85,70 @@ public class TaskService : ITaskService
     }
 
 
-
-    // ✅ NEW: Mark task as completed
-    public async Task<bool> MarkTaskCompleted(int childId, int taskId)
+    public async Task<bool> MarkTaskCompleted(int childId, int taskId, IFormFile photoFile)
     {
+        // ✅ Validate input
+        if (photoFile == null || photoFile.Length == 0)
+        {
+            // ❌ No photo uploaded
+            return false;
+        }
+
+        // ✅ Fetch task assigned to this child
         var task = await _context.Tasks
             .FirstOrDefaultAsync(t => t.Id == taskId && t.AssignedToId == childId);
 
-        if (task == null) return false;
+        if (task == null)
+        {
+            // ❌ Task not found or not assigned to this child
+            return false;
+        }
 
+        // ✅ If task already completed, skip update
+        if (task.IsCompleted)
+        {
+            return true; // already marked as complete
+        }
+
+        // ✅ Prepare uploads directory path
+        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
+        if (!Directory.Exists(uploadsFolder))
+        {
+            Directory.CreateDirectory(uploadsFolder);
+        }
+
+        // ✅ Generate unique filename and save the photo
+        var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(photoFile.FileName);
+        var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+        using (var fileStream = new FileStream(filePath, FileMode.Create))
+        {
+            await photoFile.CopyToAsync(fileStream);
+        }
+
+        // ✅ Mark task as completed with photo URL (relative path for your app)
         task.IsCompleted = true;
+        task.CompletedOn = DateTime.UtcNow;
+        task.CompletionPhotoUrl = "/uploads/" + uniqueFileName;
+      
+
         await _context.SaveChangesAsync();
+
+        //// ✅ Check and assign achievements for this child
+        //await _achievementService.CheckAndAssignAchievements(childId);
+
         return true;
     }
 
 
-
+    // ✅ 1. Get active tasks for a child
+    public async Task<List<TaskItem>> GetActiveTasksForChildAsync(int childId)
+    {
+        return await _context.Tasks
+            .Where(t => t.AssignedToId == childId && !t.IsCompleted)
+            .Include(t => t.Reward)
+            .ToListAsync();
+    }
     public async Task<bool> CheckChildExistsAsync(int childId)
     {
         return await _context.Users.AnyAsync(u => u.Id == childId && u.Role == "Child");

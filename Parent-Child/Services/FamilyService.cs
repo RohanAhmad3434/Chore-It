@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-
+using Parent_Child.Models;
 namespace Parent_Child.Services
 {
     public class FamilyService : IFamilyService
@@ -16,7 +16,6 @@ namespace Parent_Child.Services
             return await _context.Users
                 .Where(u => u.ParentId == parentId)
                 .Include(u => u.Tasks)
-                .Include(u => u.Achievements)
                 .ToListAsync();
         }
 
@@ -39,8 +38,8 @@ namespace Parent_Child.Services
         {
             return await _context.Users
                 .Include(u => u.Tasks)
-                .Include(u => u.Achievements)
-                .FirstOrDefaultAsync(u => u.Id == childId);
+                .FirstOrDefaultAsync(u => u.Id == childId && u.Role == "Child");
         }
+
     }
 }

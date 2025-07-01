@@ -18,34 +18,7 @@ namespace Parent_Child.Migrations
                 .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
-            modelBuilder.Entity("Achievement", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<bool>("IsCompleted")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Achievements");
-                });
-
-            modelBuilder.Entity("Reward", b =>
+            modelBuilder.Entity("Parent_Child.Models.Reward", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -55,8 +28,13 @@ namespace Parent_Child.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<bool>("IsRedeemed")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime?>("RedeemedOn")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -69,17 +47,22 @@ namespace Parent_Child.Migrations
                     b.ToTable("Rewards");
                 });
 
-            modelBuilder.Entity("TaskItem", b =>
+            modelBuilder.Entity("Parent_Child.Models.TaskItem", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<int>("AssignedToId")
+                    b.Property<int?>("AssignedToId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("CompletedOn")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("CompletionPhotoUrl")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<DateTime>("EndTime")
@@ -92,7 +75,6 @@ namespace Parent_Child.Migrations
                         .HasColumnType("tinyint(1)");
 
                     b.Property<string>("Priority")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<int?>("RewardId")
@@ -119,7 +101,7 @@ namespace Parent_Child.Migrations
                     b.ToTable("Tasks");
                 });
 
-            modelBuilder.Entity("User", b =>
+            modelBuilder.Entity("Parent_Child.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -147,7 +129,6 @@ namespace Parent_Child.Migrations
                         .HasColumnType("longtext");
 
                     b.Property<string>("Relation")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("Role")
@@ -164,40 +145,27 @@ namespace Parent_Child.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("Achievement", b =>
+            modelBuilder.Entity("Parent_Child.Models.Reward", b =>
                 {
-                    b.HasOne("User", "User")
-                        .WithMany("Achievements")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Reward", b =>
-                {
-                    b.HasOne("User", "AssignedTo")
+                    b.HasOne("Parent_Child.Models.User", "AssignedTo")
                         .WithMany()
                         .HasForeignKey("AssignedToId");
 
                     b.Navigation("AssignedTo");
                 });
 
-            modelBuilder.Entity("TaskItem", b =>
+            modelBuilder.Entity("Parent_Child.Models.TaskItem", b =>
                 {
-                    b.HasOne("User", "AssignedTo")
+                    b.HasOne("Parent_Child.Models.User", "AssignedTo")
                         .WithMany()
-                        .HasForeignKey("AssignedToId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("AssignedToId");
 
-                    b.HasOne("Reward", "Reward")
+                    b.HasOne("Parent_Child.Models.Reward", "Reward")
                         .WithMany()
                         .HasForeignKey("RewardId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("User", "User")
+                    b.HasOne("Parent_Child.Models.User", "User")
                         .WithMany("Tasks")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -210,19 +178,17 @@ namespace Parent_Child.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("User", b =>
+            modelBuilder.Entity("Parent_Child.Models.User", b =>
                 {
-                    b.HasOne("User", "Parent")
+                    b.HasOne("Parent_Child.Models.User", "Parent")
                         .WithMany("Children")
                         .HasForeignKey("ParentId");
 
                     b.Navigation("Parent");
                 });
 
-            modelBuilder.Entity("User", b =>
+            modelBuilder.Entity("Parent_Child.Models.User", b =>
                 {
-                    b.Navigation("Achievements");
-
                     b.Navigation("Children");
 
                     b.Navigation("Tasks");

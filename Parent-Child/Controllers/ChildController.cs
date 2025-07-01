@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Parent_Child.DTOs;
 
 [ApiController]
 [Route("api/child")]
@@ -6,11 +7,34 @@ public class ChildDashboardController : ControllerBase
 {
     private readonly ITaskService _taskService;
     private readonly IRewardService _rewardService;
-
     public ChildDashboardController(ITaskService taskService, IRewardService rewardService)
     {
         _taskService = taskService;
         _rewardService = rewardService;
+    }
+
+
+
+    // ✅ Get active chores for the child
+    [HttpGet("{childId}/active-chores")]
+    public async Task<IActionResult> GetActiveChores(int childId)
+    {
+        try
+        {
+            var childExists = await _taskService.CheckChildExistsAsync(childId);
+            if (!childExists)
+                return NotFound($"Child with ID {childId} does not exist.");
+
+            var activeTasks = await _taskService.GetActiveTasksForChildAsync(childId);
+            if (activeTasks == null || activeTasks.Count == 0)
+                return NotFound($"No active chores for child with ID {childId}.");
+
+            return Ok(activeTasks);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"An error occurred: {ex.Message}");
+        }
     }
 
 
@@ -41,13 +65,21 @@ public class ChildDashboardController : ControllerBase
         }
     }
 
-    // ✅ Mark task as completed
+    // ✅ Mark task as completed with photo upload
     [HttpPost("{childId}/tasks/{taskId}/complete")]
-    public async Task<IActionResult> CompleteTask(int childId, int taskId)
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> CompleteTask(int childId, int taskId, [FromForm] CompleteTaskDto dto)
     {
-        var result = await _taskService.MarkTaskCompleted(childId, taskId);
-        if (!result) return NotFound("Task not found or not assigned to this child");
-        return Ok("Task marked as completed");
+        if (dto.PhotoFile == null || dto.PhotoFile.Length == 0)
+        {
+            return BadRequest("Photo is required to complete the task.");
+        }
+
+        var result = await _taskService.MarkTaskCompleted(childId, taskId, dto.PhotoFile);
+        if (!result)
+            return NotFound("Task not found, not assigned to this child, or photo upload failed.");
+
+        return Ok("Task marked as completed with photo.");
     }
 
 
@@ -65,6 +97,8 @@ public class ChildDashboardController : ControllerBase
             return NotFound(ex.Message);
         }
     }
+
+
 
 
 }
