@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -9,32 +10,16 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Parent_Child.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250702122920_AddIsRedeemedToTasks")]
+    partial class AddIsRedeemedToTasks
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
-
-            modelBuilder.Entity("Parent_Child.Models.ParentChild", b =>
-                {
-                    b.Property<int>("ParentId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ChildId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Relation")
-                        .HasColumnType("longtext");
-
-                    b.HasKey("ParentId", "ChildId");
-
-                    b.HasIndex("ChildId");
-
-                    b.ToTable("ParentChildren");
-                });
 
             modelBuilder.Entity("Parent_Child.Models.Reward", b =>
                 {
@@ -134,8 +119,14 @@ namespace Parent_Child.Migrations
                     b.Property<bool>("IsGoogleUser")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("int");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Relation")
                         .HasColumnType("longtext");
 
                     b.Property<string>("Role")
@@ -147,26 +138,9 @@ namespace Parent_Child.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
+                    b.HasIndex("ParentId");
+
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("Parent_Child.Models.ParentChild", b =>
-                {
-                    b.HasOne("Parent_Child.Models.User", "Child")
-                        .WithMany("Parents")
-                        .HasForeignKey("ChildId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Parent_Child.Models.User", "Parent")
-                        .WithMany("Children")
-                        .HasForeignKey("ParentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Child");
-
-                    b.Navigation("Parent");
                 });
 
             modelBuilder.Entity("Parent_Child.Models.TaskItem", b =>
@@ -195,9 +169,16 @@ namespace Parent_Child.Migrations
 
             modelBuilder.Entity("Parent_Child.Models.User", b =>
                 {
-                    b.Navigation("Children");
+                    b.HasOne("Parent_Child.Models.User", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentId");
 
-                    b.Navigation("Parents");
+                    b.Navigation("Parent");
+                });
+
+            modelBuilder.Entity("Parent_Child.Models.User", b =>
+                {
+                    b.Navigation("Children");
 
                     b.Navigation("Tasks");
                 });

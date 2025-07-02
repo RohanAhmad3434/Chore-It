@@ -23,7 +23,7 @@ namespace Parent_Child.Controllers
             {
                 FullName = dto.FullName,
                 Email = dto.Email,
-                PasswordHash = dto.Password, // Will be hashed inside service
+                PasswordHash = dto.Password,
                 Role = dto.Role,
                 IsGoogleUser = dto.IsGoogleUser
             };
@@ -40,5 +40,7 @@ namespace Parent_Child.Controllers
             if (user == null) return Unauthorized("Invalid credentials");
             return Ok(user);
         }
+
+
     }
 }

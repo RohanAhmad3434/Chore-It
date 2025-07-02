@@ -4,10 +4,10 @@ using Parent_Child.Models;
 
 [ApiController]
 [Route("api/tasks")]
-public class TaskController : ControllerBase
+public class ParentDashboardController : ControllerBase
 {
     private readonly ITaskService _service;
-    public TaskController(ITaskService service) => _service = service;
+    public ParentDashboardController(ITaskService service) => _service = service;
 
     [HttpGet]
     public async Task<IActionResult> GetAll() => Ok(await _service.GetAllAsync());

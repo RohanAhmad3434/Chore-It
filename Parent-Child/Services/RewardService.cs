@@ -23,9 +23,9 @@ public class RewardService : IRewardService
         if (!childExists)
             throw new Exception($"Child with ID {childId} does not exist.");
 
-        // ✅ Fetch rewards linked via tasks
+        // ✅ Fetch rewards linked via tasks for this child
         var rewardsFromTasks = await _context.Tasks
-            .Where(t => t.AssignedToId == childId && t.RewardId != null)
+            .Where(t => t.AssignedToId == childId && t.RewardId != null && t.IsRedeemed)
             .Include(t => t.Reward)
             .Select(t => new RewardDto
             {
@@ -33,51 +33,38 @@ public class RewardService : IRewardService
                 Title = t.Reward.Title,
                 Description = t.Reward.Description,
                 AssignedToId = t.AssignedToId,
-                IsRedeemed = t.Reward.IsRedeemed,
-                RedeemedOn = t.Reward.RedeemedOn
+                IsRedeemed = t.IsRedeemed,
+                RedeemedOn = t.RedeemedOn
             })
             .ToListAsync();
 
-        // ✅ Fetch rewards assigned directly to child
-        var directlyAssignedRewards = await _context.Rewards
-            .Where(r => r.AssignedToId == childId)
-            .Select(r => new RewardDto
-            {
-                Id = r.Id,
-                Title = r.Title,
-                Description = r.Description,
-                AssignedToId = r.AssignedToId,
-                IsRedeemed = r.IsRedeemed,
-                RedeemedOn = r.RedeemedOn
-            })
-            .ToListAsync();
+        // ✅ Remove direct assignment rewards logic since Reward no longer stores AssignedToId
 
-        // ✅ Combine both sources without duplicates
-        var allRewards = rewardsFromTasks.Concat(directlyAssignedRewards)
-            .GroupBy(r => r.Id)
-            .Select(g => g.First())
-            .ToList();
-
-        // ✅ Validate if rewards found
-        if (allRewards.Count == 0)
+        if (rewardsFromTasks.Count == 0)
             throw new Exception($"No rewards found for child ID {childId}.");
 
-        return allRewards;
+        return rewardsFromTasks;
     }
 
 
-    // ✅ 4. Redeem reward
-    public async Task<Reward?> RedeemRewardAsync(int rewardId)
+
+
+    //✅ 4. Redeem reward
+    public async Task<TaskItem?> RedeemRewardAsync(int taskId)
     {
-        var reward = await _context.Rewards.FindAsync(rewardId);
-        if (reward == null || reward.IsRedeemed)
+        var task = await _context.Tasks
+            .Include(t => t.Reward)
+            .FirstOrDefaultAsync(t => t.Id == taskId);
+
+        if (task == null || task.IsRedeemed)
             return null;
 
-        reward.IsRedeemed = true;
-        reward.RedeemedOn = DateTime.UtcNow;
+        task.IsRedeemed = true;
+        task.RedeemedOn = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
-        return reward;
+        return task;
     }
+
 
 }

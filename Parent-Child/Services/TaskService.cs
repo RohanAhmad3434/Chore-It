@@ -34,17 +34,17 @@ public class TaskService : ITaskService
         task.IsApproved = true;
         task.IsCompleted = true;
 
-        // ✅ If the task has a reward, mark it as redeemed and assign to child
+        // ✅ If the task has a reward, mark it as redeemed at approval time
         if (task.RewardId != null)
         {
-            task.Reward.IsRedeemed = true;
-            task.Reward.RedeemedOn = DateTime.UtcNow;
-            task.Reward.AssignedToId = task.AssignedToId;
+            task.IsRedeemed = true;
+            task.RedeemedOn = DateTime.UtcNow;
         }
 
         await _context.SaveChangesAsync();
         return true;
     }
+
 
 
     public async Task<bool> RejectTask(int id)

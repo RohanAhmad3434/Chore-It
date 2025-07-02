@@ -9,6 +9,6 @@ public interface IRewardService
     Task<Reward> CreateAsync(Reward reward);
 
     Task<List<RewardDto>> GetRewardsByChildIdAsync(int childId);
-    Task<Reward?> RedeemRewardAsync(int rewardId);
+    Task<TaskItem?> RedeemRewardAsync(int taskId);
 
 }

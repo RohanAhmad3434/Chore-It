@@ -21,21 +21,35 @@ public class FamilyController : ControllerBase
         return Ok(children);
     }
 
+
     [HttpPost("{parentId}/add-child")]
     public async Task<IActionResult> AddChild(int parentId, ChildRegistrationDto dto)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         var child = new User
         {
             FullName = dto.FullName,
             Email = dto.Email,
             PasswordHash = dto.Password,
             DateOfBirth = dto.DateOfBirth,
-            Relation = dto.Relation
+            Role = "Child",
+            IsGoogleUser = dto.IsGoogleUser // ✅ use from DTO
         };
 
-        var addedChild = await _service.AddChildAsync(parentId, child);
-        return Ok(addedChild);
+
+        try
+        {
+            var addedChild = await _service.AddChildAsync(parentId, child, dto.Relation);
+            return Ok(addedChild);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
     }
+
 
     //// Optional: Implement GetChildProfileAsync in IFamilyService and FamilyService if needed
     [HttpGet("child/{childId}")]
@@ -45,4 +59,24 @@ public class FamilyController : ControllerBase
         if (child == null) return NotFound("Child not found");
         return Ok(child);
     }
+
+
+    [HttpPost("{parentId}/assign-child/{childId}")]
+    public async Task<IActionResult> AssignChild(int parentId, int childId, [FromBody] AssignChildDto dto)
+    {
+        try
+        {
+            var result = await _service.AssignChildAsync(parentId, childId, dto.Relation);
+            if (!result)
+                return BadRequest("Assignment failed. Child may not exist or is already assigned.");
+
+            return Ok($"Child (ID: {childId}) successfully assigned to Parent (ID: {parentId}) with relation '{dto.Relation}'.");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+
 }

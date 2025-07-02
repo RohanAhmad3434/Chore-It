@@ -10,6 +10,9 @@ namespace Parent_Child.DTOs
 
         public DateTime DateOfBirth { get; set; }
         public string Relation { get; set; }
+
+        public bool IsGoogleUser { get; set; } = false;
+
     }
 
 }

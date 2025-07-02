@@ -83,7 +83,7 @@ public class ChildDashboardController : ControllerBase
     }
 
 
-    //// ✅ View rewards for this child
+    // ✅ View rewards for this child
     [HttpGet("{childId}/rewards")]
     public async Task<IActionResult> GetRewards(int childId)
     {
@@ -97,8 +97,5 @@ public class ChildDashboardController : ControllerBase
             return NotFound(ex.Message);
         }
     }
-
-
-
 
 }
