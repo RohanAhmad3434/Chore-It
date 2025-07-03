@@ -5,17 +5,15 @@ using Parent_Child.Models;
 public class TaskService : ITaskService
 {
     private readonly AppDbContext _context;
-    //public TaskService(AppDbContext context) => _context = context;
-
-    
-    public async Task<List<TaskItem>> GetAllAsync() =>
-        await _context.Tasks.Include(t => t.Reward).ToListAsync();
-
     public TaskService(AppDbContext context)
     {
         _context = context;
         
     }
+
+    public async Task<List<TaskItem>> GetAllAsync() =>
+        await _context.Tasks.Include(t => t.Reward).ToListAsync();
+
     public async Task<TaskItem> CreateAsync(TaskItem task)
     {
         _context.Tasks.Add(task);
@@ -42,7 +40,60 @@ public class TaskService : ITaskService
         }
 
         await _context.SaveChangesAsync();
+
+        // ✅ Call achievement check logic
+        await CheckAndAssignAchievementsAsync(task.AssignedToId ?? 0);
+
         return true;
+    }
+
+
+
+    private async Task CheckAndAssignAchievementsAsync(int childId)
+    {
+        // Get all rewards the child has completed
+        var completedRewards = await _context.Tasks
+            .Where(t => t.AssignedToId == childId && t.IsCompleted && t.IsApproved && t.RewardId != null)
+            .GroupBy(t => t.RewardId)
+            .Select(g => new
+            {
+                RewardId = g.Key.Value,
+                Count = g.Count()
+            })
+            .ToListAsync();
+
+        // Get all achievements definitions
+        var achievements = await _context.Achievements.ToListAsync();
+
+        foreach (var rewardCompletion in completedRewards)
+        {
+            var matchingAchievements = achievements
+                .Where(a => a.RewardId == rewardCompletion.RewardId &&
+                            rewardCompletion.Count >= a.CompletionThreshold)
+                .ToList();
+
+            foreach (var achievement in matchingAchievements)
+            {
+                // Check if child already has this achievement
+                bool alreadyHas = await _context.UserAchievements
+                    .AnyAsync(ua => ua.UserId == childId && ua.AchievementId == achievement.Id);
+
+                if (!alreadyHas)
+                {
+                    // Assign achievement
+                    var userAchievement = new UserAchievement
+                    {
+                        UserId = childId,
+                        AchievementId = achievement.Id,
+                        DateAchieved = DateTime.UtcNow
+                    };
+
+                    _context.UserAchievements.Add(userAchievement);
+                }
+            }
+        }
+
+        await _context.SaveChangesAsync();
     }
 
 
@@ -133,10 +184,6 @@ public class TaskService : ITaskService
       
 
         await _context.SaveChangesAsync();
-
-        //// ✅ Check and assign achievements for this child
-        //await _achievementService.CheckAndAssignAchievements(childId);
-
         return true;
     }
 

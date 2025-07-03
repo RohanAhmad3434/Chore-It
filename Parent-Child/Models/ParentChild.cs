@@ -13,3 +13,4 @@ namespace Parent_Child.Models
         public string? Relation { get; set; } // Father, Mother, etc.
     }
 }
+

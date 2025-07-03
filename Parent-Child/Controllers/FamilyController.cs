@@ -7,9 +7,9 @@ using Parent_Child.Models;
 [ApiController]
 public class FamilyController : ControllerBase
 {
-    private readonly IFamilyService _service; // ✅ use the interface
+    private readonly IFamilyService _service;
 
-    public FamilyController(IFamilyService service) // ✅ inject the interface
+    public FamilyController(IFamilyService service)
     {
         _service = service;
     }
@@ -50,8 +50,6 @@ public class FamilyController : ControllerBase
         }
     }
 
-
-    //// Optional: Implement GetChildProfileAsync in IFamilyService and FamilyService if needed
     [HttpGet("child/{childId}")]
     public async Task<IActionResult> GetChildProfile(int childId)
     {

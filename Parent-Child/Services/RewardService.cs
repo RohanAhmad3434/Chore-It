@@ -38,16 +38,11 @@ public class RewardService : IRewardService
             })
             .ToListAsync();
 
-        // ✅ Remove direct assignment rewards logic since Reward no longer stores AssignedToId
-
         if (rewardsFromTasks.Count == 0)
             throw new Exception($"No rewards found for child ID {childId}.");
 
         return rewardsFromTasks;
     }
-
-
-
 
     //✅ 4. Redeem reward
     public async Task<TaskItem?> RedeemRewardAsync(int taskId)
@@ -65,6 +60,5 @@ public class RewardService : IRewardService
         await _context.SaveChangesAsync();
         return task;
     }
-
 
 }

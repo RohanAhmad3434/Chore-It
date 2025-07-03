@@ -6,7 +6,6 @@ namespace Parent_Child.Services
 {
     public interface IFamilyService
     {
-        //Task<User> AddChildAsync(int parentId, User child);
         Task<User?> AddChildAsync(int parentId, User child, string relation);
         Task<List<ChildDto>> GetChildrenAsync(int parentId);
         Task<User?> GetChildProfileAsync(int childId);

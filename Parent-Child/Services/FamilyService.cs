@@ -61,9 +61,6 @@ namespace Parent_Child.Services
 
         }
 
-
-
-
         public async Task<User?> AddChildAsync(int parentId, User child, string relation)
         {
             // Check if email already exists

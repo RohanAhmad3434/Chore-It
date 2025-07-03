@@ -10,9 +10,8 @@ public interface ITaskService
     Task<bool> ApproveTask(int id);
     Task<bool> RejectTask(int id);
 
-    // ✅ Updated to match DTO
     Task<List<TaskItemDto>> GetTasksByChildIdAsync(int childId);
-    // ✅ Updated method signature to accept IFormFile photoFile
+
     Task<bool> MarkTaskCompleted(int childId, int taskId, IFormFile photoFile);
     Task<bool> CheckChildExistsAsync(int childId);
     Task<List<TaskItem>> GetActiveTasksForChildAsync(int childId);

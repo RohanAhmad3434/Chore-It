@@ -26,6 +26,8 @@ builder.Services.AddScoped<IRewardService, RewardService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IFamilyService, FamilyService>();
 builder.Services.AddScoped<IStatsService, StatisticsService>();
+builder.Services.AddScoped<IAchievementService, AchievementService>();
+
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
