@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Parent_Child.DTOs;
 using Parent_Child.Models;
 public class RewardService : IRewardService
@@ -11,6 +12,14 @@ public class RewardService : IRewardService
 
     public async Task<Reward> CreateAsync(Reward reward)
     {
+        // ✅ Validate reward object
+        if (reward == null)
+            throw new ArgumentNullException(nameof(reward), "Reward cannot be null.");
+
+        // ✅ Validate title (required)
+        if (string.IsNullOrWhiteSpace(reward.Title))
+            throw new ArgumentException("Reward title is required.");
+
         _context.Rewards.Add(reward);
         await _context.SaveChangesAsync();
         return reward;
@@ -43,6 +52,7 @@ public class RewardService : IRewardService
 
         return rewardsFromTasks;
     }
+
 
     //✅ 4. Redeem reward
     public async Task<TaskItem?> RedeemRewardAsync(int taskId)

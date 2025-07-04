@@ -16,6 +16,36 @@ public class TaskService : ITaskService
 
     public async Task<TaskItem> CreateAsync(TaskItem task)
     {
+        // ✅ Validate title
+        if (string.IsNullOrWhiteSpace(task.Title))
+            throw new ArgumentException("Task title is required.");
+
+        // ✅ Validate start and end time consistency
+        if (task.StartTime >= task.EndTime)
+            throw new ArgumentException("Start time must be before end time.");
+
+        // ✅ Validate assigned child existence (if provided)
+        if (task.AssignedToId != null)
+        {
+            var childExists = await _context.Users.AnyAsync(u => u.Id == task.AssignedToId && u.Role == "Child");
+            if (!childExists)
+                throw new Exception($"Assigned child with ID {task.AssignedToId} does not exist.");
+        }
+
+        // ✅ Validate parent existence
+        var parentExists = await _context.Users.AnyAsync(u => u.Id == task.UserId && u.Role == "Parent");
+        if (!parentExists)
+            throw new Exception($"Parent with ID {task.UserId} does not exist.");
+
+        // ✅ Validate reward existence if provided
+        if (task.RewardId != null)
+        {
+            var rewardExists = await _context.Rewards.AnyAsync(r => r.Id == task.RewardId);
+            if (!rewardExists)
+                throw new Exception($"Reward with ID {task.RewardId} does not exist.");
+        }
+
+
         _context.Tasks.Add(task);
         await _context.SaveChangesAsync();
         return task;
@@ -23,11 +53,15 @@ public class TaskService : ITaskService
 
     public async Task<bool> ApproveTask(int id)
     {
+        if (id <= 0)
+            throw new ArgumentException("Invalid task ID.");
+
         var task = await _context.Tasks
             .Include(t => t.Reward)
             .FirstOrDefaultAsync(t => t.Id == id);
 
-        if (task == null) return false;
+        if (task == null)
+            throw new Exception($"Task with ID {id} not found.");
 
         task.IsApproved = true;
         task.IsCompleted = true;
@@ -51,6 +85,13 @@ public class TaskService : ITaskService
 
     private async Task CheckAndAssignAchievementsAsync(int childId)
     {
+        if (childId <= 0)
+            return;
+
+        var childExists = await _context.Users.AnyAsync(u => u.Id == childId && u.Role == "Child");
+        if (!childExists)
+            throw new Exception($"Child with ID {childId} does not exist.");
+
         // Get all rewards the child has completed
         var completedRewards = await _context.Tasks
             .Where(t => t.AssignedToId == childId && t.IsCompleted && t.IsApproved && t.RewardId != null)
@@ -100,8 +141,13 @@ public class TaskService : ITaskService
 
     public async Task<bool> RejectTask(int id)
     {
+        if (id <= 0)
+            throw new ArgumentException("Invalid task ID.");
+
         var task = await _context.Tasks.FindAsync(id);
-        if (task == null) return false;
+        if (task == null)
+            throw new Exception($"Task with ID {id} not found.");
+
         task.IsApproved = false;
         task.IsCompleted = false; // redo
         await _context.SaveChangesAsync();
@@ -110,6 +156,13 @@ public class TaskService : ITaskService
 
     public async Task<List<TaskItemDto>> GetTasksByChildIdAsync(int childId)
     {
+        if (childId <= 0)
+            throw new ArgumentException("Invalid child ID.");
+
+        var childExists = await _context.Users.AnyAsync(u => u.Id == childId && u.Role == "Child");
+        if (!childExists)
+            throw new Exception($"Child with ID {childId} does not exist.");
+
         return await _context.Tasks
             .Where(t => t.AssignedToId == childId)
             .Include(t => t.AssignedTo)
@@ -138,28 +191,24 @@ public class TaskService : ITaskService
 
     public async Task<bool> MarkTaskCompleted(int childId, int taskId, IFormFile photoFile)
     {
-        // ✅ Validate input
+        // ✅ Validate child existence
+        var childExists = await _context.Users.AnyAsync(u => u.Id == childId && u.Role == "Child");
+        if (!childExists)
+            throw new Exception($"Child with ID {childId} does not exist.");
+
+
+        // ✅ Validate input photo
         if (photoFile == null || photoFile.Length == 0)
-        {
-            // ❌ No photo uploaded
-            return false;
-        }
+            throw new ArgumentException("No photo uploaded.");
+
 
         // ✅ Fetch task assigned to this child
         var task = await _context.Tasks
             .FirstOrDefaultAsync(t => t.Id == taskId && t.AssignedToId == childId);
 
         if (task == null)
-        {
-            // ❌ Task not found or not assigned to this child
-            return false;
-        }
+            throw new Exception($"Task with ID {taskId} not found for child ID {childId}.");
 
-        // ✅ If task already completed, skip update
-        if (task.IsCompleted)
-        {
-            return true; // already marked as complete
-        }
 
         // ✅ Prepare uploads directory path
         var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
@@ -168,7 +217,17 @@ public class TaskService : ITaskService
             Directory.CreateDirectory(uploadsFolder);
         }
 
-        // ✅ Generate unique filename and save the photo
+        // ✅ Delete existing photo file if it exists
+        //if (!string.IsNullOrEmpty(task.CompletionPhotoUrl))
+        //{
+        //    var existingFilePath = Path.Combine(Directory.GetCurrentDirectory(), task.CompletionPhotoUrl.TrimStart('/').Replace("/", Path.DirectorySeparatorChar.ToString()));
+        //    if (System.IO.File.Exists(existingFilePath))
+        //    {
+        //        System.IO.File.Delete(existingFilePath);
+        //    }
+        //}
+
+        // ✅ Generate unique filename and save the new photo
         var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(photoFile.FileName);
         var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
@@ -177,20 +236,27 @@ public class TaskService : ITaskService
             await photoFile.CopyToAsync(fileStream);
         }
 
-        // ✅ Mark task as completed with photo URL (relative path for your app)
+        // ✅ Mark task as completed with new photo URL
         task.IsCompleted = true;
         task.CompletedOn = DateTime.UtcNow;
         task.CompletionPhotoUrl = "/uploads/" + uniqueFileName;
-      
 
         await _context.SaveChangesAsync();
         return true;
     }
 
 
+
     // ✅ 1. Get active tasks for a child
     public async Task<List<TaskItem>> GetActiveTasksForChildAsync(int childId)
     {
+        if (childId <= 0)
+            throw new ArgumentException("Invalid child ID.");
+
+        var childExists = await _context.Users.AnyAsync(u => u.Id == childId && u.Role == "Child");
+        if (!childExists)
+            throw new Exception($"Child with ID {childId} does not exist.");
+
         return await _context.Tasks
             .Where(t => t.AssignedToId == childId && !t.IsCompleted)
             .Include(t => t.Reward)
@@ -198,6 +264,12 @@ public class TaskService : ITaskService
     }
     public async Task<bool> CheckChildExistsAsync(int childId)
     {
+        if (childId <= 0)
+            throw new ArgumentException("Invalid child ID.");
+
+        var childExists = await _context.Users.AnyAsync(u => u.Id == childId && u.Role == "Child");
+        if (!childExists)
+            throw new Exception($"Child with ID {childId} does not exist.");
         return await _context.Users.AnyAsync(u => u.Id == childId && u.Role == "Child");
     }
 

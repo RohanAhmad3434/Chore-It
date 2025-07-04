@@ -23,7 +23,6 @@ namespace Parent_Child.Models
         // ✅ The threshold e.g. 3 times
         public int CompletionThreshold { get; set; }
 
-        // ✅ Optional icon URL for UI
         public string? IconUrl { get; set; }
     }
 }

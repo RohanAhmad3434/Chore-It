@@ -14,6 +14,14 @@ public class StatisticsService : IStatsService
 
     public async Task<ChildStatisticsDto> GetChildStatsAsync(int childId)
     {
+        if (childId <= 0)
+            throw new ArgumentException("Invalid child ID.");
+
+        var childExists = await _context.Users.AnyAsync(u => u.Id == childId && u.Role == "Child");
+        if (!childExists)
+            throw new Exception($"Child with ID {childId} does not exist.");
+
+
         var totalTasks = await _context.Tasks.CountAsync(t => t.AssignedToId == childId);
         var completedTasks = await _context.Tasks.CountAsync(t => t.AssignedToId == childId && t.IsApproved);
 

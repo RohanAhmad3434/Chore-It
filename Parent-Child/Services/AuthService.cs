@@ -17,6 +17,12 @@ namespace Parent_Child.Services
 
         public async Task<UserDto?> LoginAsync(string email, string password)
         {
+            if (string.IsNullOrWhiteSpace(email))
+                throw new ArgumentException("Email is required.");
+
+            if (string.IsNullOrWhiteSpace(password))
+                throw new ArgumentException("Password is required.");
+
             var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == email);
             if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
                 return null;
@@ -32,6 +38,24 @@ namespace Parent_Child.Services
 
         public async Task<User> RegisterAsync(User user)
         {
+            // ✅ Validate required fields
+            if (string.IsNullOrWhiteSpace(user.FullName))
+                throw new ArgumentException("Full name is required.");
+
+            if (string.IsNullOrWhiteSpace(user.Email))
+                throw new ArgumentException("Email is required.");
+
+            if (string.IsNullOrWhiteSpace(user.PasswordHash))
+                throw new ArgumentException("Password is required.");
+
+            if (string.IsNullOrWhiteSpace(user.Role))
+                throw new ArgumentException("Role is required.");
+
+            // ✅ Check if email already exists
+            var emailExists = await _context.Users.AnyAsync(u => u.Email == user.Email.Trim());
+            if (emailExists)
+                throw new Exception($"A user with email {user.Email} already exists.");
+
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.PasswordHash);
             _context.Users.Add(user);
             await _context.SaveChangesAsync();

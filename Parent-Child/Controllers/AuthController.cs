@@ -16,31 +16,66 @@ namespace Parent_Child.Controllers
             _authService = authService;
         }
 
+
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
-            var user = new User
-            {
-                FullName = dto.FullName,
-                Email = dto.Email,
-                PasswordHash = dto.Password,
-                Role = dto.Role,
-                IsGoogleUser = dto.IsGoogleUser
-            };
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            var created = await _authService.RegisterAsync(user);
-            return Ok(created);
+            try
+            {
+                var user = new User
+                {
+                    FullName = dto.FullName,
+                    Email = dto.Email,
+                    PasswordHash = dto.Password,
+                    Role = dto.Role,
+                    IsGoogleUser = dto.IsGoogleUser
+                };
+
+                var created = await _authService.RegisterAsync(user);
+                return Ok(created);
+            }
+            catch (ArgumentException ex)
+            {
+                // For missing required fields
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                // For duplicate email or other general errors
+                return Conflict(new { message = ex.Message });
+            }
         }
 
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
-            var user = await _authService.LoginAsync(loginDto.Email, loginDto.Password);
-            if (user == null) return Unauthorized("Invalid credentials");
-            return Ok(user);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var user = await _authService.LoginAsync(loginDto.Email, loginDto.Password);
+                if (user == null)
+                    return Unauthorized(new { message = "Invalid credentials." });
+
+                return Ok(user);
+            }
+            catch (ArgumentException ex)
+            {
+                // For missing email or password input
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                // For unexpected errors
+                return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
+            }
         }
-
-
     }
+
+
 }

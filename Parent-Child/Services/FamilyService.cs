@@ -14,6 +14,17 @@ namespace Parent_Child.Services
 
         public async Task<List<ChildDto>> GetChildrenAsync(int parentId)
         {
+            if (parentId <= 0)
+                throw new ArgumentException("Invalid parentId.");
+
+
+            // ✅ Validate that the parent exists
+            var parentExists = await _context.Users
+                .AnyAsync(u => u.Id == parentId && u.Role == "Parent");
+
+            if (!parentExists)
+                throw new Exception($"Parent with ID {parentId} not found.");
+
             var childIds = await _context.ParentChildren
                 .Where(pc => pc.ParentId == parentId)
                 .Select(pc => pc.ChildId)
@@ -63,9 +74,25 @@ namespace Parent_Child.Services
 
         public async Task<User?> AddChildAsync(int parentId, User child, string relation)
         {
+            if (parentId <= 0)
+                throw new ArgumentException("Invalid parentId.");
+
+            if (child == null)
+                throw new ArgumentException("Child data is required.");
+
+            if (string.IsNullOrWhiteSpace(child.Email))
+                throw new ArgumentException("Child email is required.");
+
+            if (string.IsNullOrWhiteSpace(child.PasswordHash))
+                throw new ArgumentException("Child password is required.");
+
+            if (string.IsNullOrWhiteSpace(relation))
+                throw new ArgumentException("Relation is required.");
+
             // Check if email already exists
-            if (await _context.Users.AnyAsync(u => u.Email == child.Email))
-                throw new Exception("Email already exists.");
+            bool emailExists = await _context.Users.AnyAsync(u => u.Email == child.Email.Trim());
+            if (emailExists)
+                throw new Exception("A user with this email already exists.");
 
             // Hash password before saving
             child.PasswordHash = BCrypt.Net.BCrypt.HashPassword(child.PasswordHash);
@@ -92,6 +119,16 @@ namespace Parent_Child.Services
 
         public async Task<User?> GetChildProfileAsync(int childId)
         {
+            if (childId <= 0)
+                throw new ArgumentException("Invalid childId.");
+
+            var child = await _context.Users
+                              .Include(u => u.Tasks)
+                              .FirstOrDefaultAsync(u => u.Id == childId && u.Role == "Child");
+
+            if (child == null)
+                throw new Exception($"Child with ID {childId} not found.");
+
             return await _context.Users
                 .Include(u => u.Tasks)
                 .FirstOrDefaultAsync(u => u.Id == childId && u.Role == "Child");
@@ -100,6 +137,12 @@ namespace Parent_Child.Services
 
         public async Task<bool> AssignChildAsync(int parentId, int childId, string relation)
         {
+            if (parentId <= 0 || childId <= 0)
+                throw new ArgumentException("Invalid parentId or childId.");
+
+            if (string.IsNullOrWhiteSpace(relation))
+                throw new ArgumentException("Relation is required.");
+
             var parent = await _context.Users.FirstOrDefaultAsync(u => u.Id == parentId && u.Role == "Parent");
             if (parent == null)
             {

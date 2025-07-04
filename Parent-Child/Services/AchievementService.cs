@@ -7,23 +7,39 @@ namespace Parent_Child.Services
     public class AchievementService : IAchievementService
     {
         private readonly AppDbContext _context;
-        private readonly IWebHostEnvironment _env;
-
-        public AchievementService(AppDbContext context, IWebHostEnvironment env)
+        public AchievementService(AppDbContext context)
         {
             _context = context;
-            _env = env;
         }
+
 
         public async Task<AchievementDto> CreateAchievementAsync(AchievementCreateDto dto, HttpRequest request)
         {
-            string? iconUrl = null;
+            if (string.IsNullOrWhiteSpace(dto.Title))
+                throw new ArgumentException("Title is required.");
 
-            // ✅ Handle file upload
+            if (dto.RewardId <= 0)
+                throw new ArgumentException("RewardId must be valid.");
+
+            if (dto.CompletionThreshold <= 0)
+                throw new ArgumentException("CompletionThreshold must be greater than zero.");
+
+            var rewardExists = await _context.Rewards.AnyAsync(r => r.Id == dto.RewardId);
+            if (!rewardExists)
+                throw new Exception($"Reward with ID {dto.RewardId} does not exist.");
+
+
+
+            string? iconPath = null;
+
             if (dto.IconFile != null)
             {
-                var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
-                Directory.CreateDirectory(uploadsFolder);
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
+
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
 
                 var fileName = Guid.NewGuid().ToString() + Path.GetExtension(dto.IconFile.FileName);
                 var filePath = Path.Combine(uploadsFolder, fileName);
@@ -33,8 +49,7 @@ namespace Parent_Child.Services
                     await dto.IconFile.CopyToAsync(stream);
                 }
 
-                // Generate URL
-                iconUrl = $"{request.Scheme}://{request.Host}/uploads/{fileName}";
+                iconPath = "/uploads/" + fileName;
             }
 
             var achievement = new Achievement
@@ -43,7 +58,7 @@ namespace Parent_Child.Services
                 Description = dto.Description,
                 RewardId = dto.RewardId,
                 CompletionThreshold = dto.CompletionThreshold,
-                IconUrl = iconUrl
+                IconUrl = iconPath
             };
 
             _context.Achievements.Add(achievement);
@@ -63,6 +78,7 @@ namespace Parent_Child.Services
             };
         }
 
+
         public async Task<List<Achievement>> GetAllAchievementsAsync()
         {
             return await _context.Achievements
@@ -73,7 +89,7 @@ namespace Parent_Child.Services
 
         public async Task<List<UserAchievementDto>> GetChildAchievementsAsync(int childId)
         {
-            // ✅ Check if user exists and is a Child
+
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.Id == childId && u.Role == "Child");
 
@@ -95,8 +111,6 @@ namespace Parent_Child.Services
             }).ToList();
         }
 
-
-
         public async Task<AchievementDto> UpdateAchievementAsync(int id, AchievementUpdateDto dto, HttpRequest request)
         {
             var achievement = await _context.Achievements.FindAsync(id);
@@ -104,11 +118,40 @@ namespace Parent_Child.Services
             if (achievement == null)
                 throw new Exception($"Achievement with ID {id} not found.");
 
-            // ✅ Handle updated icon upload if provided
+            if (string.IsNullOrWhiteSpace(dto.Title))
+                throw new ArgumentException("Title is required.");
+
+            if (dto.RewardId <= 0)
+                throw new ArgumentException("RewardId must be valid.");
+
+            if (dto.CompletionThreshold <= 0)
+                throw new ArgumentException("CompletionThreshold must be greater than zero.");
+
+            var rewardExists = await _context.Rewards.AnyAsync(r => r.Id == dto.RewardId);
+            if (!rewardExists)
+                throw new Exception($"Reward with ID {dto.RewardId} does not exist.");
+
+
+            // ✅ If a new icon file is uploaded
             if (dto.IconFile != null)
             {
-                var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
-                Directory.CreateDirectory(uploadsFolder);
+                //// ✅ Delete previous icon file if exists and is stored as relative path
+                //if (!string.IsNullOrEmpty(achievement.IconUrl))
+                //{
+                //    var existingFilePath = Path.Combine(Directory.GetCurrentDirectory(), achievement.IconUrl.TrimStart('/').Replace("/", Path.DirectorySeparatorChar.ToString()));
+                //    if (System.IO.File.Exists(existingFilePath))
+                //    {
+                //        System.IO.File.Delete(existingFilePath);
+                //    }
+                //}
+
+                // ✅ Save new uploaded file
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
+
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
 
                 var fileName = Guid.NewGuid().ToString() + Path.GetExtension(dto.IconFile.FileName);
                 var filePath = Path.Combine(uploadsFolder, fileName);
@@ -118,7 +161,7 @@ namespace Parent_Child.Services
                     await dto.IconFile.CopyToAsync(stream);
                 }
 
-                achievement.IconUrl = $"{request.Scheme}://{request.Host}/uploads/{fileName}";
+                achievement.IconUrl = "/uploads/" + fileName;
             }
 
             // ✅ Update other fields
@@ -143,6 +186,7 @@ namespace Parent_Child.Services
             };
         }
 
+
         public async Task<bool> DeleteAchievementAsync(int id)
         {
             var achievement = await _context.Achievements.FindAsync(id);
@@ -155,8 +199,6 @@ namespace Parent_Child.Services
 
             return true;
         }
-
-
 
     }
 }

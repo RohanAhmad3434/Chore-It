@@ -17,13 +17,19 @@ public class FamilyController : ControllerBase
     [HttpGet("{parentId}/children")]
     public async Task<IActionResult> GetChildren(int parentId)
     {
-        var children = await _service.GetChildrenAsync(parentId);
-        return Ok(children);
+        try
+        {
+            var children = await _service.GetChildrenAsync(parentId);
+            return Ok(children);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
-
     [HttpPost("{parentId}/add-child")]
-    public async Task<IActionResult> AddChild(int parentId, ChildRegistrationDto dto)
+    public async Task<IActionResult> AddChild(int parentId, [FromBody] ChildRegistrationDto dto)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
@@ -35,9 +41,8 @@ public class FamilyController : ControllerBase
             PasswordHash = dto.Password,
             DateOfBirth = dto.DateOfBirth,
             Role = "Child",
-            IsGoogleUser = dto.IsGoogleUser // ✅ use from DTO
+            IsGoogleUser = dto.IsGoogleUser
         };
-
 
         try
         {
@@ -46,18 +51,27 @@ public class FamilyController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, new { message = ex.Message });
         }
     }
+
 
     [HttpGet("child/{childId}")]
     public async Task<IActionResult> GetChildProfile(int childId)
     {
-        var child = await _service.GetChildProfileAsync(childId);
-        if (child == null) return NotFound("Child not found");
-        return Ok(child);
-    }
+        try
+        {
+            var child = await _service.GetChildProfileAsync(childId);
+            if (child == null)
+                return NotFound(new { message = "Child not found." });
 
+            return Ok(child);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = ex.Message });
+        }
+    }
 
     [HttpPost("{parentId}/assign-child/{childId}")]
     public async Task<IActionResult> AssignChild(int parentId, int childId, [FromBody] AssignChildDto dto)
@@ -65,16 +79,12 @@ public class FamilyController : ControllerBase
         try
         {
             var result = await _service.AssignChildAsync(parentId, childId, dto.Relation);
-            if (!result)
-                return BadRequest("Assignment failed. Child may not exist or is already assigned.");
-
-            return Ok($"Child (ID: {childId}) successfully assigned to Parent (ID: {parentId}) with relation '{dto.Relation}'.");
+            return Ok(new { message = $"Child (ID: {childId}) successfully assigned to Parent (ID: {parentId}) with relation '{dto.Relation}'." });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
+            return StatusCode(500, new { message = ex.Message });
         }
     }
-
 
 }

@@ -11,10 +11,22 @@ public class StatsController : ControllerBase
         _service = service;
     }
 
+
     [HttpGet("{childId}")]
     public async Task<IActionResult> GetChildStats(int childId)
     {
-        var stats = await _service.GetChildStatsAsync(childId);
-        return Ok(stats);
+        try
+        {
+            var stats = await _service.GetChildStatsAsync(childId);
+            return Ok(stats);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
     }
 }

@@ -21,7 +21,6 @@ builder.Services.AddControllers()
 
 
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<IRewardService, RewardService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IFamilyService, FamilyService>();
