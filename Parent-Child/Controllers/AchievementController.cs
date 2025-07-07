@@ -2,10 +2,12 @@
 using Parent_Child.DTOs;
 using Parent_Child.Models;
 using Parent_Child.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Parent_Child.Controllers
 {
     [Route("api/achievements")]
+    [Authorize(Policy = "ChildOrParentPolicy")]
     [ApiController]
     public class AchievementController : ControllerBase
     {

@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Parent_Child.DTOs;
 
 [ApiController]
 [Route("api/child")]
+[Authorize(Policy = "ChildPolicy")] // ✅ Only users with Child role can access
 public class ChildDashboardController : ControllerBase
 {
     private readonly ITaskService _taskService;

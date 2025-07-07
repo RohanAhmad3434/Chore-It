@@ -22,6 +22,10 @@ namespace Parent_Child.Models
 
         public DateTime DateOfBirth { get; set; }
 
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiryTime { get; set; }
+
+
         // ✅ Many-to-Many navigation properties
         public List<ParentChild>? Parents { get; set; } // This user as Child has multiple Parents
         public List<ParentChild>? Children { get; set; } // This user as Parent has multiple Children

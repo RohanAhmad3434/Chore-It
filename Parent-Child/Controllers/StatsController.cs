@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Parent_Child.Services;
 
 [ApiController]
+[Authorize(Policy = "ChildOrParentPolicy")]
 [Route("api/stats")]
 public class StatsController : ControllerBase
 {

@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Parent_Child.DTOs;
 using Parent_Child.Models;
 [ApiController]
 [Route("api/rewards")]
+[Authorize(Policy = "ParentPolicy")]
 public class RewardController : ControllerBase
 {
     private readonly IRewardService _service;

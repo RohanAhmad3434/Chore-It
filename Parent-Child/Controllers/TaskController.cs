@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Parent_Child.DTOs;
 using Parent_Child.Models;
 
 [ApiController]
 [Route("api/tasks")]
+[Authorize(Policy = "ParentPolicy")]
 public class ParentDashboardController : ControllerBase
 {
     private readonly ITaskService _service;

@@ -2,8 +2,10 @@
 using Parent_Child.DTOs;
 using Parent_Child.Services;
 using Parent_Child.Models;
+using Microsoft.AspNetCore.Authorization;
 
 [Route("api/family")]
+[Authorize(Policy = "ParentPolicy")]
 [ApiController]
 public class FamilyController : ControllerBase
 {

@@ -1,7 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Parent_Child.Services;     // ✅ This is the missing using
-using Parent_Child.Models;       // ✅ Needed to recognize 'User'
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using Parent_Child.DTOs;         // ✅ Needed to recognize 'LoginDto'
+using Parent_Child.Models;       // ✅ Needed to recognize 'User'
+using Parent_Child.Services;     // ✅ This is the missing using
 
 namespace Parent_Child.Controllers
 {
@@ -39,42 +43,58 @@ namespace Parent_Child.Controllers
             }
             catch (ArgumentException ex)
             {
-                // For missing required fields
                 return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                // For duplicate email or other general errors
                 return Conflict(new { message = ex.Message });
             }
         }
 
 
+
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             try
             {
-                var user = await _authService.LoginAsync(loginDto.Email, loginDto.Password);
+                var (accessToken, refreshToken, user) = await _authService.LoginWithTokensAsync(loginDto.Email, loginDto.Password);
                 if (user == null)
-                    return Unauthorized(new { message = "Invalid credentials." });
+                    return Unauthorized("Invalid credentials");
 
-                return Ok(user);
-            }
-            catch (ArgumentException ex)
-            {
-                // For missing email or password input
-                return BadRequest(new { message = ex.Message });
+                return Ok(new { accessToken, refreshToken, user });
             }
             catch (Exception ex)
             {
-                // For unexpected errors
-                return StatusCode(500, new { message = $"An error occurred: {ex.Message}" });
+                return BadRequest(ex.Message);
             }
         }
+
+
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh([FromBody] TokenApiDto tokenApiDto)
+        {
+            if (tokenApiDto is null)
+                return BadRequest("Invalid client request");
+
+            try
+            {
+                var (newAccessToken, newRefreshToken) = await _authService.RefreshTokenAsync(tokenApiDto.AccessToken, tokenApiDto.RefreshToken);
+                return Ok(new { accessToken = newAccessToken, refreshToken = newRefreshToken });
+            }
+            catch (SecurityTokenException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+
+
     }
 
 
